@@ -1,0 +1,38 @@
+[gd_scene load_steps=6 format=3 uid="uid://cmckd25doqqpd"]
+
+[ext_resource type="Script" uid="uid://oqmel6yp0xcg" path="res://Scripts/fighter.gd" id="1_efvb3"]
+[ext_resource type="Texture2D" uid="uid://dsq2dpr3oxsy7" path="res://icon.svg" id="2_umvcx"]
+
+[sub_resource type="Gradient" id="Gradient_umvcx"]
+colors = PackedColorArray(0.80784315, 0.69803923, 0, 1, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_qq641"]
+gradient = SubResource("Gradient_umvcx")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_l3gly"]
+particle_flag_disable_z = true
+spread = 180.0
+initial_velocity_min = 200.0
+initial_velocity_max = 400.0
+gravity = Vector3(0, 980, 0)
+scale_min = 5.0
+scale_max = 8.0
+color_ramp = SubResource("GradientTexture1D_qq641")
+
+[node name="Fighter" type="Node2D"]
+script = ExtResource("1_efvb3")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="Sprite2D" type="Sprite2D" parent="Visuals"]
+texture = ExtResource("2_umvcx")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="HitSpark" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 20
+lifetime = 0.5
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_l3gly")
