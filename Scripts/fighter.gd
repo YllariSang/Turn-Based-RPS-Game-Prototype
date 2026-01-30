@@ -16,12 +16,24 @@ func play_attack(stance_index):
 		t.tween_callback(anim.play.bind(anim_name)) # Change frame mid-squash
 		t.tween_property(visuals, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_ELASTIC)
 
+func play_clash():
+	if anim.has_animation("clash"):
+		anim.play("clash")
+		var t = create_tween().set_loops()
+		t.tween_property(visuals, "position", Vector2(randf_range(-2, 2), 0), 0.05)
+		t.tween_property(visuals, "position", Vector2.ZERO, 0.05)
+
 func take_hit():
 	print(name + " took damage!")
-	
 	hit_spark.emitting = true
 	
-	# Simple flash red effect
+	if anim.has_animation("take_hit"):
+		anim.play("take_hit")
+	
+	
 	var tween = create_tween()
 	tween.tween_property(visuals, "modulate", Color.RED, 0.1)
 	tween.tween_property(visuals, "modulate", Color.WHITE, 0.1)
+	
+	await get_tree().create_timer(0.5).timeout
+	anim.play("idle")

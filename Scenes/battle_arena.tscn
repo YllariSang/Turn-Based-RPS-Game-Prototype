@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://qketpea2kgf0"]
+[gd_scene load_steps=19 format=3 uid="uid://qketpea2kgf0"]
 
 [ext_resource type="Script" uid="uid://x5e3mkt3gadu" path="res://Scripts/CameraShake.gd" id="2_bx1f6"]
 [ext_resource type="PackedScene" uid="uid://cmckd25doqqpd" path="res://Scenes/fighter.tscn" id="3_1o8xg"]
@@ -128,14 +128,11 @@ func _on_btn_man_button_down():
 	set_held_stance(Stance.MAN)
 
 func set_held_stance(stance):
+	if current_state != State.TELEGRAPH: return
 	player_held_stance = stance
-	# 1. Immediately play the animation for the held stance
-	player.play_attack(stance) 
-	
-	# 2. Visual Feedback: Dim player to show they are \"tensed\"
+	player.play_attack(stance)
 	player.modulate = Color(0.6, 0.6, 0.6)
 
-# Connect \"button_up\" signals here
 func _on_btn_heaven_button_up(): check_release_timing()
 func _on_btn_earth_button_up():  check_release_timing()
 func _on_btn_man_button_up():    check_release_timing()
@@ -172,6 +169,8 @@ func resolve_combat():
 
 func start_clash_struggle():
 	current_state = State.CLASH
+	player.play_clash()
+	enemy.play_clash()
 	mash_score = 0
 	clash_label.show()
 	play_sound(sound_clash)
@@ -406,13 +405,69 @@ tracks/1/keys = {
 "values": [4]
 }
 
+[sub_resource type="Animation" id="Animation_ommy6"]
+resource_name = "take_hit"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [4]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:frame")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [3]
+}
+
+[sub_resource type="Animation" id="Animation_1mswv"]
+resource_name = "clash"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [2]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.033333335),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [5]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_gr7gb"]
 _data = {
 &"RESET": SubResource("Animation_jt1c1"),
 &"attack_EARTH": SubResource("Animation_yee6e"),
 &"attack_HEAVEN": SubResource("Animation_gbjy2"),
 &"attack_MAN": SubResource("Animation_htxfv"),
-&"idle": SubResource("Animation_f8pxj")
+&"clash": SubResource("Animation_1mswv"),
+&"idle": SubResource("Animation_f8pxj"),
+&"take_hit": SubResource("Animation_ommy6")
 }
 
 [sub_resource type="Animation" id="Animation_gr7gb"]
