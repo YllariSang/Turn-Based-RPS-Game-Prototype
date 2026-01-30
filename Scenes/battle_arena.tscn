@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://qketpea2kgf0"]
+[gd_scene load_steps=17 format=3 uid="uid://qketpea2kgf0"]
 
 [ext_resource type="Script" uid="uid://x5e3mkt3gadu" path="res://Scripts/CameraShake.gd" id="2_bx1f6"]
 [ext_resource type="PackedScene" uid="uid://cmckd25doqqpd" path="res://Scenes/fighter.tscn" id="3_1o8xg"]
 [ext_resource type="Texture2D" uid="uid://dsq2dpr3oxsy7" path="res://icon.svg" id="3_bx1f6"]
+[ext_resource type="Texture2D" uid="uid://dpnwtmqyxente" path="res://placeholder_player.png" id="3_gr7gb"]
 
 [sub_resource type="GDScript" id="GDScript_gbjy2"]
 script/source = "extends Node2D
@@ -128,8 +129,11 @@ func _on_btn_man_button_down():
 
 func set_held_stance(stance):
 	player_held_stance = stance
-	# Visual Feedback: Dim player to show they are \"tensed\"
-	player.modulate = Color(0.6, 0.6, 0.6) 
+	# 1. Immediately play the animation for the held stance
+	player.play_attack(stance) 
+	
+	# 2. Visual Feedback: Dim player to show they are \"tensed\"
+	player.modulate = Color(0.6, 0.6, 0.6)
 
 # Connect \"button_up\" signals here
 func _on_btn_heaven_button_up(): check_release_timing()
@@ -141,13 +145,21 @@ func check_release_timing():
 	player.modulate = Color.WHITE
 	
 	if current_state == State.TELEGRAPH:
+		# If they let go too early, return to idle
+		player.anim.play(\"idle\") 
 		resolve_failure(\"FLINCHED\")
 	elif current_state == State.WAITING_FOR_SIGNAL:
 		resolve_combat()
+	else:
+		# If they let go and nothing happened, return to idle
+		player.anim.play(\"idle\")
 
 # --- 4. COMBAT RESOLUTION & CLASH ---
 func resolve_combat():
 	current_state = State.ACTION
+	
+	player.play_attack(player_held_stance)
+	enemy.play_attack(enemy_intent)
 	
 	var winner = get_winner(player_held_stance, enemy_intent)
 	
@@ -259,6 +271,170 @@ func _on_btn_man_mouse_entered() -> void:
 		set_held_stance(Stance.MAN)
 "
 
+[sub_resource type="Animation" id="Animation_gbjy2"]
+resource_name = "attack_HEAVEN"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [1]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [5]
+}
+
+[sub_resource type="Animation" id="Animation_htxfv"]
+resource_name = "attack_MAN"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [2]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [5]
+}
+
+[sub_resource type="Animation" id="Animation_yee6e"]
+resource_name = "attack_EARTH"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [2]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [4]
+}
+
+[sub_resource type="Animation" id="Animation_f8pxj"]
+resource_name = "idle"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [5]
+}
+
+[sub_resource type="Animation" id="Animation_jt1c1"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [4]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_gr7gb"]
+_data = {
+&"RESET": SubResource("Animation_jt1c1"),
+&"attack_EARTH": SubResource("Animation_yee6e"),
+&"attack_HEAVEN": SubResource("Animation_gbjy2"),
+&"attack_MAN": SubResource("Animation_htxfv"),
+&"idle": SubResource("Animation_f8pxj")
+}
+
+[sub_resource type="Animation" id="Animation_gr7gb"]
+resource_name = "idle"
+
+[sub_resource type="Animation" id="Animation_ujh7t"]
+resource_name = "attack_HEAVEN"
+
+[sub_resource type="Animation" id="Animation_rmqoj"]
+resource_name = "attack_EARTH"
+
+[sub_resource type="Animation" id="Animation_vctd8"]
+resource_name = "attack_MAN"
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_1mswv"]
+_data = {
+&"attack_EARTH": SubResource("Animation_rmqoj"),
+&"attack_HEAVEN": SubResource("Animation_ujh7t"),
+&"attack_MAN": SubResource("Animation_vctd8"),
+&"idle": SubResource("Animation_gr7gb")
+}
+
 [node name="BattleArena" type="Node2D"]
 script = SubResource("GDScript_gbjy2")
 
@@ -277,8 +453,22 @@ script = ExtResource("2_bx1f6")
 [node name="Player" parent="Actors" instance=ExtResource("3_1o8xg")]
 position = Vector2(302, 290)
 
+[node name="Sprite2D" parent="Actors/Player/Visuals" index="0"]
+texture = ExtResource("3_gr7gb")
+hframes = 4
+
+[node name="AnimationPlayer" parent="Actors/Player" index="1"]
+libraries = {
+&"": SubResource("AnimationLibrary_gr7gb")
+}
+
 [node name="Enemy" parent="Actors" instance=ExtResource("3_1o8xg")]
 position = Vector2(846, 313)
+
+[node name="AnimationPlayer" parent="Actors/Enemy" index="1"]
+libraries = {
+&"": SubResource("AnimationLibrary_1mswv")
+}
 
 [node name="TurnTimer" type="Timer" parent="."]
 
@@ -349,7 +539,6 @@ layout_mode = 2
 texture_normal = ExtResource("3_bx1f6")
 
 [node name="ClashLabel" type="Label" parent="HUD/Control"]
-visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -390,3 +579,6 @@ offset_bottom = 8.0
 [connection signal="button_up" from="HUD/Control/StanceSelector/BtnMan" to="." method="_on_btn_man_button_up"]
 [connection signal="mouse_entered" from="HUD/Control/StanceSelector/BtnMan" to="." method="_on_btn_man_mouse_entered"]
 [connection signal="pressed" from="HUD/Control/ResultScreen/RetryButton" to="." method="_on_retry_button_pressed"]
+
+[editable path="Actors/Player"]
+[editable path="Actors/Enemy"]
