@@ -41,6 +41,11 @@ var sound_clash = preload(\"res://SFX/Clash.mp3\")
 var sound_hit = preload(\"res://SFX/Hit.mp3\")
 var sound_signal = preload(\"res://SFX/Signal.mp3\")
 
+enum BossGimmick { NONE, INVISIBLE, DANCING, SCRAMBLE }
+
+var current_gimmick = BossGimmick.NONE
+var is_boss_fight = false
+
 func _ready():
 	clash_label.hide()
 	if result_screen: result_screen.hide()
@@ -57,6 +62,13 @@ func start_new_round():
 	var feint_chance = 0.3
 	var min_delay = 0.8
 	
+	if is_boss_fight:
+		current_gimmick = [BossGimmick.INVISIBLE, BossGimmick.DANCING, BossGimmick.SCRAMBLE].pick_random()
+		match current_gimmick:
+			BossGimmick.SCRAMBLE:
+				scramble_buttons()
+			BossGimmick.DANCING:
+				start_dancing_ui()
 	
 	if current_enemy_hp == 1:
 		feint_chance = 0.8
@@ -152,6 +164,9 @@ func check_release_timing():
 
 # --- 4. COMBAT RESOLUTION & CLASH ---
 func resolve_combat():
+	apply_invisibility(false)
+	var t = create_tween() 
+	t.tween_property(ui_buttons, \"modulate:a\", 1.0, 0.1)
 	current_state = State.ACTION
 	
 	var midpoint = (player.global_position + enemy.global_position) / 2
@@ -311,6 +326,31 @@ func reset_combat_positions():
 	player.return_to_start()
 	enemy.return_to_start()
 	create_tween().tween_property(camera, \"zoom\", Vector2(1.0, 1.0), 0.3)
+
+func apply_invisibility(active: bool):
+	if active:
+		create_tween().tween_property(ui_buttons, \"modulate:a\", 0.0, 0.5)
+	else:
+		create_tween().tween_property(ui_buttons, \"modulate:a\", 1.0, 0.2)
+
+func start_dancing_ui():
+	var tween = create_tween().set_loops()
+	var original_pos = ui_buttons.position
+	tween.tween_property(ui_buttons, \"position\", original_pos + Vector2(randf_range(-50, 50), randf_range(-20, 20)), 0.4)
+	tween.tween_property(ui_buttons, \"position\", original_pos, 0.4)
+	return tween
+
+func scramble_buttons():
+	var buttons = ui_buttons.get_children()
+	buttons.shuffle()
+	# This assumes you are using a Container (like HBoxContainer) 
+	# shuffling children automatically reorders them in the UI.
+	for b in buttons:
+		ui_buttons.move_child(b, randi() % buttons.size())
+
+func start_telegraph():
+	if current_gimmick == BossGimmick.INVISIBLE:
+		apply_invisibility(true)
 "
 
 [sub_resource type="Animation" id="Animation_jt1c1"]
