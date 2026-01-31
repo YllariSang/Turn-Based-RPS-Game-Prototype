@@ -6,19 +6,24 @@ extends Node2D
 
 var clash_tween: Tween
 var original_position: Vector2
+var attack_tween: Tween
 
 func _ready():
 	original_position = global_position
 
 func play_attack(stance_index):
+	if attack_tween: attack_tween.kill()
+	attack_tween = create_tween()
 	var stance_names = ["HEAVEN", "EARTH", "MAN"]
 	var anim_name = "attack_" + stance_names[stance_index]
 	
 	if anim.has_animation(anim_name):
-		var t = create_tween()
-		t.tween_property(visuals, "scale", Vector2(1.2, 0.8), 0.05)
-		t.tween_callback(anim.play.bind(anim_name)) # Change frame mid-squash
-		t.tween_property(visuals, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_ELASTIC)
+		if attack_tween: attack_tween.kill()
+		attack_tween = create_tween()
+		
+		attack_tween.tween_property(visuals, "scale", Vector2(1.2, 0.8), 0.05)
+		attack_tween.tween_callback(anim.play.bind(anim_name))
+		attack_tween.tween_property(visuals, "scale", Vector2(1.0, 1.0), 0.1)
 
 func play_clash():
 	if anim.has_animation("clash") and anim.current_animation != "clash":

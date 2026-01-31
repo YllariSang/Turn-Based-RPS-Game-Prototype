@@ -121,9 +121,15 @@ func _on_btn_man_button_down():
 
 func set_held_stance(stance):
 	if current_state != State.TELEGRAPH: return
+	if player_held_stance == stance: return 
+	
 	player_held_stance = stance
 	player.play_attack(stance)
-	player.modulate = Color(0.6, 0.6, 0.6)
+	
+	match stance:
+		Stance.HEAVEN: player.modulate = Color(1, 0.6, 0.6) # Light Red
+		Stance.EARTH:  player.modulate = Color(0.6, 1, 0.6) # Light Green
+		Stance.MAN:    player.modulate = Color(0.6, 0.6, 1) # Light Blue
 
 func _on_btn_heaven_button_up(): check_release_timing()
 func _on_btn_earth_button_up():  check_release_timing()
@@ -173,6 +179,9 @@ func resolve_combat():
 
 func start_clash_struggle():
 	current_state = State.CLASH
+	
+	mash_threshold = 10 + (5 if current_enemy_hp == 1 else 0)
+	print(\"CLASH! Threshold is: \", mash_threshold)
 	
 	var midpoint = (player.global_position + enemy.global_position) / 2
 	player.approach_target(midpoint + Vector2(-20, 0), 0.1)
@@ -269,7 +278,18 @@ func update_health_ui():
 
 func resolve_failure(reason):
 	current_state = State.ACTION
-	print(\"Failed: \" + reason)
+	
+	clash_label.text = reason.replace(\"_\", \" \")
+	clash_label.show()
+	
+	var t = create_tween()
+	t.tween_property(player, \"modulate\", Color.RED, 0.1)
+	t.tween_property(player, \"modulate\", Color.WHITE, 0.1)
+	
+	await get_tree().create_timer(1.0).timeout
+	clash_label.hide()
+	clash_label.text = \"MASH!\"
+	
 	apply_hit(player, \"PLAYER\")
 
 
