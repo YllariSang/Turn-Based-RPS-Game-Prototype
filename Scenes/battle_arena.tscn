@@ -133,8 +133,12 @@ func check_release_timing():
 	player.modulate = Color.WHITE
 	
 	if current_state == State.TELEGRAPH:
-		player.anim.play(\"idle\") 
-		resolve_failure(\"FLINCHED\")
+		if player_held_stance == Stance.NONE:
+			player.anim.play(\"idle\")
+			resolve_failure(\"FLINCHED\")
+		else:
+			print(\"Player is holding stance: \", Stance.keys()[player_held_stance])
+			
 	elif current_state == State.WAITING_FOR_SIGNAL:
 		resolve_combat()
 	else:
@@ -607,12 +611,12 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="BtnHeaven" type="TextureButton" parent="HUD/Control/StanceSelector"]
-modulate = Color(0.89411765, 0.5137255, 0.1764706, 1)
+modulate = Color(0.77294296, 0.16442683, 0.18932089, 1)
 layout_mode = 2
 texture_normal = ExtResource("3_bx1f6")
 
 [node name="BtnEarth" type="TextureButton" parent="HUD/Control/StanceSelector"]
-modulate = Color(1, 0.44313726, 0.37254903, 1)
+modulate = Color(0.42309296, 0.7406195, 7.70092e-07, 1)
 layout_mode = 2
 texture_normal = ExtResource("3_bx1f6")
 
