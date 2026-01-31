@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://qketpea2kgf0"]
+[gd_scene load_steps=21 format=3 uid="uid://qketpea2kgf0"]
 
 [ext_resource type="Script" uid="uid://x5e3mkt3gadu" path="res://Scripts/CameraShake.gd" id="2_bx1f6"]
 [ext_resource type="PackedScene" uid="uid://cmckd25doqqpd" path="res://Scenes/fighter.tscn" id="3_1o8xg"]
@@ -33,7 +33,7 @@ var is_feinting = false
 @onready var player_lives_ui = $HUD/Control/HealthContainer/PlayerLives
 @onready var enemy_lives_ui = $HUD/Control/HealthContainer/EnemyLives
 
-# Game Over UI Nodes (MAKE SURE THESE EXIST IN SCENE!)
+# Game Over UI Nodes
 @onready var result_screen = $HUD/Control/ResultScreen
 @onready var result_label = $HUD/Control/ResultScreen/Label
 
@@ -47,33 +47,31 @@ func _ready():
 	update_health_ui()
 	start_new_round()
 
-# --- 1. THE SETUP & FEINT SYSTEM ---
+# --- 1. THE SETUP & FEINT ---
 func start_new_round():
 	current_state = State.TELEGRAPH
 	player_held_stance = Stance.NONE
 	ui_buttons.show()
 	
-	# --- DYNAMIC DIFFICULTY (ENRAGE) ---
+	# --- DYNAMIC DIFFICULTY ---
 	var feint_chance = 0.3
 	var min_delay = 0.8
 	
-	# Berserk Mode if Enemy has 1 HP
+	
 	if current_enemy_hp == 1:
 		feint_chance = 0.8
 		min_delay = 0.4
 		print(\"ENEMY IS ENRAGED!\")
 	
 	is_feinting = (randf() < feint_chance)
-	# -----------------------------------
 	
-	# Pick intent
+	
 	var moves = [Stance.HEAVEN, Stance.EARTH, Stance.MAN]
 	enemy_intent = moves.pick_random()
 	
 	await get_tree().create_timer(1.0).timeout
 	
 	if is_feinting:
-		# SHOW FAKE COLOR
 		var fake_stance = moves.pick_random()
 		while fake_stance == enemy_intent: fake_stance = moves.pick_random()
 		flash_enemy_color(fake_stance)
@@ -83,11 +81,9 @@ func start_new_round():
 		enemy.modulate = Color.WHITE # Reset
 		await get_tree().create_timer(0.4).timeout
 	
-	# SHOW REAL COLOR
 	flash_enemy_color(enemy_intent)
 	print(\"Enemy commits to \", Stance.keys()[enemy_intent])
 	
-	# Prepare for the \"Strike Signal\"
 	var delay = randf_range(min_delay, min_delay + 0.5)
 	await get_tree().create_timer(delay).timeout
 	trigger_strike_signal()
@@ -98,26 +94,22 @@ func flash_enemy_color(stance):
 		Stance.EARTH:  enemy.modulate = Color(0.3, 1, 0.3) # Green
 		Stance.MAN:    enemy.modulate = Color(0.3, 0.3, 1) # Blue
 
-# --- 2. THE REFLEX SIGNAL ---
 func trigger_strike_signal():
 	if current_state != State.TELEGRAPH: return
 	
 	current_state = State.WAITING_FOR_SIGNAL
 	play_sound(sound_signal)
 	
-	# FLASH WHITE - THIS IS THE \"GO\" SIGNAL!
 	var tween = create_tween()
 	tween.tween_property(enemy, \"modulate\", Color(10, 10, 10), 0.1) # Bright flash
 	tween.tween_property(enemy, \"modulate\", Color.WHITE, 0.1)
 	
-	# Player has 0.4 seconds to release!
 	await get_tree().create_timer(0.4).timeout
 	
-	# If time runs out and player didn't release:
 	if current_state == State.WAITING_FOR_SIGNAL:
 		resolve_failure(\"TOO_SLOW\")
 
-# --- 3. INPUT HANDLING (HOLD & RELEASE) ---
+# --- 3. INPUT HANDLING ---
 func _on_btn_heaven_button_down(): 
 	set_held_stance(Stance.HEAVEN)
 
@@ -138,22 +130,27 @@ func _on_btn_earth_button_up():  check_release_timing()
 func _on_btn_man_button_up():    check_release_timing()
 
 func check_release_timing():
-	# Reset visual feedback
 	player.modulate = Color.WHITE
 	
 	if current_state == State.TELEGRAPH:
-		# If they let go too early, return to idle
 		player.anim.play(\"idle\") 
 		resolve_failure(\"FLINCHED\")
 	elif current_state == State.WAITING_FOR_SIGNAL:
 		resolve_combat()
 	else:
-		# If they let go and nothing happened, return to idle
 		player.anim.play(\"idle\")
 
 # --- 4. COMBAT RESOLUTION & CLASH ---
 func resolve_combat():
 	current_state = State.ACTION
+	
+	var midpoint = (player.global_position + enemy.global_position) / 2
+	
+	player.approach_target(midpoint + Vector2(-50, 0)) # Stop just before midpoint
+	enemy.approach_target(midpoint + Vector2(50, 0))
+	
+	var cam_tween = create_tween()
+	cam_tween.tween_property(camera, \"zoom\", Vector2(1.2, 1.2), 0.2)
 	
 	player.play_attack(player_held_stance)
 	enemy.play_attack(enemy_intent)
@@ -162,15 +159,26 @@ func resolve_combat():
 	
 	if winner == \"CLASH\":
 		start_clash_struggle()
-	elif winner == \"PLAYER_WIN\":
-		apply_hit(enemy, \"ENEMY\")
 	else:
-		apply_hit(player, \"PLAYER\")
+		await get_tree().create_timer(0.5).timeout
+		reset_combat_positions()
+		if winner == \"PLAYER_WIN\":
+			apply_hit(enemy, \"ENEMY\")
+		else:
+			apply_hit(player, \"PLAYER\")
 
 func start_clash_struggle():
 	current_state = State.CLASH
+	
+	var midpoint = (player.global_position + enemy.global_position) / 2
+	player.approach_target(midpoint + Vector2(-20, 0), 0.1)
+	enemy.approach_target(midpoint + Vector2(20, 0), 0.1)
+	
 	player.play_clash()
 	enemy.play_clash()
+	
+	create_tween().tween_property(camera, \"zoom\", Vector2(1.4, 1.4), 0.1)
+	
 	mash_score = 0
 	clash_label.show()
 	play_sound(sound_clash)
@@ -178,17 +186,25 @@ func start_clash_struggle():
 	await get_tree().create_timer(2.0).timeout
 	
 	clash_label.hide()
+	reset_combat_positions()
+	player.stop_clash_effects()
+	enemy.stop_clash_effects()
+	
 	if mash_score >= mash_threshold:
+		print(\"PLAYER WON THE CLASH!\")
 		apply_hit(enemy, \"ENEMY\") 
 	else:
+		print(\"ENEMY WON THE CLASH!\")
 		apply_hit(player, \"PLAYER\")
 
 func _input(event):
 	if current_state == State.CLASH and event.is_action_pressed(\"ui_accept\"):
 		mash_score += 1
 		camera.apply_shake(2.0)
+		
+		player.play_mash_jolt() 
+		enemy.play_mash_jolt()
 
-# --- 5. DAMAGE & RESET ---
 func apply_hit(target_node, loser_name):
 	target_node.take_hit()
 	camera.apply_shake(10.0)
@@ -217,14 +233,13 @@ func show_result(text):
 		result_label.text = text
 		result_screen.show()
 	else:
-		# Fallback if UI is missing
 		print(\"GAME OVER: \" + text)
 		get_tree().reload_current_scene()
 
 func _on_retry_button_pressed():
 	get_tree().reload_current_scene()
 
-# --- HELPER FUNCTIONS ---
+
 func get_winner(p, e):
 	if p == e: return \"CLASH\"
 	if (p == Stance.HEAVEN and e == Stance.EARTH) or \\
@@ -244,7 +259,6 @@ func play_sound(stream):
 		$SFXPlayer.play()
 
 func update_health_ui():
-	# Simple width scaling for placeholder hearts
 	if player_lives_ui: player_lives_ui.custom_minimum_size.x = current_player_hp * 40
 	if enemy_lives_ui: enemy_lives_ui.custom_minimum_size.x = current_enemy_hp * 40
 	print(\"HP: P=\", current_player_hp, \" E=\", current_enemy_hp)
@@ -268,7 +282,66 @@ func _on_btn_earth_mouse_entered() -> void:
 func _on_btn_man_mouse_entered() -> void:
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		set_held_stance(Stance.MAN)
+
+func reset_combat_positions():
+	player.return_to_start()
+	enemy.return_to_start()
+	create_tween().tween_property(camera, \"zoom\", Vector2(1.0, 1.0), 0.3)
 "
+
+[sub_resource type="Animation" id="Animation_jt1c1"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [4]
+}
+
+[sub_resource type="Animation" id="Animation_yee6e"]
+resource_name = "attack_EARTH"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visuals/Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [2]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [4]
+}
 
 [sub_resource type="Animation" id="Animation_gbjy2"]
 resource_name = "attack_HEAVEN"
@@ -324,8 +397,8 @@ tracks/1/keys = {
 "values": [5]
 }
 
-[sub_resource type="Animation" id="Animation_yee6e"]
-resource_name = "attack_EARTH"
+[sub_resource type="Animation" id="Animation_1mswv"]
+resource_name = "clash"
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -345,10 +418,10 @@ tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0),
+"times": PackedFloat32Array(0.033333335),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [4]
+"values": [5]
 }
 
 [sub_resource type="Animation" id="Animation_f8pxj"]
@@ -378,33 +451,6 @@ tracks/1/keys = {
 "values": [5]
 }
 
-[sub_resource type="Animation" id="Animation_jt1c1"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Visuals/Sprite2D:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [0]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [4]
-}
-
 [sub_resource type="Animation" id="Animation_ommy6"]
 resource_name = "take_hit"
 tracks/0/type = "value"
@@ -432,33 +478,6 @@ tracks/1/keys = {
 "values": [3]
 }
 
-[sub_resource type="Animation" id="Animation_1mswv"]
-resource_name = "clash"
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Visuals/Sprite2D:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [2]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("Visuals/Sprite2D:hframes")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0.033333335),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [5]
-}
-
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_gr7gb"]
 _data = {
 &"RESET": SubResource("Animation_jt1c1"),
@@ -470,24 +489,32 @@ _data = {
 &"take_hit": SubResource("Animation_ommy6")
 }
 
-[sub_resource type="Animation" id="Animation_gr7gb"]
-resource_name = "idle"
+[sub_resource type="Animation" id="Animation_rmqoj"]
+resource_name = "attack_EARTH"
 
 [sub_resource type="Animation" id="Animation_ujh7t"]
 resource_name = "attack_HEAVEN"
 
-[sub_resource type="Animation" id="Animation_rmqoj"]
-resource_name = "attack_EARTH"
-
 [sub_resource type="Animation" id="Animation_vctd8"]
 resource_name = "attack_MAN"
+
+[sub_resource type="Animation" id="Animation_gr7gb"]
+resource_name = "idle"
+
+[sub_resource type="Animation" id="Animation_8xchm"]
+resource_name = "clash"
+
+[sub_resource type="Animation" id="Animation_20cr6"]
+resource_name = "take_hit"
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_1mswv"]
 _data = {
 &"attack_EARTH": SubResource("Animation_rmqoj"),
 &"attack_HEAVEN": SubResource("Animation_ujh7t"),
 &"attack_MAN": SubResource("Animation_vctd8"),
-&"idle": SubResource("Animation_gr7gb")
+&"clash": SubResource("Animation_8xchm"),
+&"idle": SubResource("Animation_gr7gb"),
+&"take_hit": SubResource("Animation_20cr6")
 }
 
 [node name="BattleArena" type="Node2D"]

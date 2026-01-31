@@ -1,4 +1,3 @@
-# CameraShake.gd
 extends Camera2D
 
 var shake_strength: float = 0.0
