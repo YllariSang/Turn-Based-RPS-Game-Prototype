@@ -14,3 +14,7 @@ config/name="mm2ed"
 run/main_scene="uid://qketpea2kgf0"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+Global="*res://Scripts/Global.gd"

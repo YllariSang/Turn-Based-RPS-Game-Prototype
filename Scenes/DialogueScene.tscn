@@ -1,0 +1,59 @@
+[gd_scene load_steps=2 format=3 uid="uid://dj35citxy178v"]
+
+[ext_resource type="Script" uid="uid://dv5i8u5a4vqys" path="res://Scenes/dialogue_scene.gd" id="1_cv2ic"]
+
+[node name="CanvasLayer" type="CanvasLayer"]
+script = ExtResource("1_cv2ic")
+
+[node name="DialogueUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Backgrounds" type="TextureRect" parent="DialogueUI"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Portraits" type="CanvasGroup" parent="DialogueUI"]
+
+[node name="LeftPortrait" type="TextureRect" parent="DialogueUI/Portraits"]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="RightPortrait" type="TextureRect" parent="DialogueUI/Portraits"]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextBoxContainer" type="Control" parent="DialogueUI"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="DialogueBox" type="Panel" parent="DialogueUI/TextBoxContainer"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="DialogueText" type="RichTextLabel" parent="DialogueUI/TextBoxContainer"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="NameTag" type="Label" parent="DialogueUI/TextBoxContainer"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="ContinueIndicator" type="TextureRect" parent="DialogueUI/TextBoxContainer"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="SFXPlayer" type="AudioStreamPlayer" parent="DialogueUI"]
+
+[node name="FadeOverlay" type="ColorRect" parent="DialogueUI"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
